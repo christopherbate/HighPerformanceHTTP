@@ -2,12 +2,12 @@ version: 2
 jobs:
   build:
     docker:
-      - image: debian:stretch
+      - image: gcc:latest
     steps:
       - checkout
       - run:
-          name: Greeting
-          command: echo Hello, world.
+          name: Build
+          command: make
       - run:
-          name: Print the Current Time
+          name: Test
           command: date
