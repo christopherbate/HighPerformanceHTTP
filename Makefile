@@ -1,16 +1,28 @@
 CC=g++
-CFLAGS=-Wall Werror
+CC_FLAGS=-Wall -Werror -g
 
-BUILD_DIR = ./Debug/
+BUILD_DIR=Debug
+SRC_DIR=src
 
-SRC_FILES = $(wildcard *.cpp)
-OBJ_FILES = $(SRC_FILES:.cpp=.o)
+SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
+OBJ_FILES = $(notdir $(SRC_FILES:.cpp=.o))
+OBJ_TEST = $(filter-out main.o, $(OBJ_FILES))
+OBJECTS=$(patsubst %, Debug/%, $(OBJ_FILES))
+OBJECTS_TEST = $(patsubst %, Debug/%, $(OBJ_TEST))
 
-server: $(BUILD_DIR)$(OBJ_FILES)
-	$(CC) $(BUILD_DIR)$(OBJ_FILES) -o server
+all: server tests
 
-$(BUILD_DIR)%.o: %.cpp
+server: $(OBJECTS)
+	$(CC) $(OBJECTS) -o server -lpthread
+
+tests: $(OBJECTS_TEST) tests/tests.o	
+	$(CC) $(OBJECTS_TEST) tests/tests.o -o server_tests -lpthread
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	$(CC) -c $(CC_FLAGS) $< -o $@
+
+tests/%.o: tests/%.cpp tests/ctb_test.h
 	$(CC) -c $(CC_FLAGS) $< -o $@
 
 clean:
-	rm -f server $(BUILD_DIR)$(OBJ_FILES)
+	rm -f server $(OBJECTS)
