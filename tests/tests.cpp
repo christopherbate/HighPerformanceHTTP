@@ -90,6 +90,18 @@ int main(int argc, char **argv)
         });
 
     TestRunner::GetRunner()->AddTest(
+        "HTTP Response Creation - Files",
+        "Must set content-length when given file",
+        []() {
+            string hdr = "GET /Protocols/rfc1945/rfc1945 HTTP/1.0";
+
+            HTTPRequest request(hdr);
+            HTTPResponse response(request);            
+            
+            return 0;
+        });
+
+    TestRunner::GetRunner()->AddTest(
         "HTTP Request Parsing",
         "Must parse protocol version",
         []() {
