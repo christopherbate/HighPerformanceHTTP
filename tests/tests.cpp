@@ -1,14 +1,93 @@
 #include "ctb_test.h"
 #include "../src/HTTPRequest.h"
+#include "../src/HTTPResponse.h"
 #include "../src/TCPSocket.h"
 #include <iostream>
 #include <string>
 using namespace std;
 int main(int argc, char **argv)
 {
-    std::cout << "Starting tests." << std::endl;
+    std::cout << "Starting tests." << std::endl;    
 
-    TestRunner::GetRunner();
+    TestRunner::GetRunner()->AddTest(
+        "HTTP Response Creation",
+        "Must create default protocol to HTTP/1.1",
+        []() {
+            HTTPResponse response;
+            
+            if(response.GetProtocol() != "HTTP/1.1"){
+                return 0;
+            }
+
+            return 1;
+        });
+
+    TestRunner::GetRunner()->AddTest(
+        "HTTP Response Creation",
+        "Must create default header with status 200",
+        []() {
+            HTTPResponse response;
+            
+            cout << response.GetHeader();
+
+            if( response.GetHeader() != "HTTP/1.1 200 Document Follows\r\n\r\n"){
+                return 0;
+            }
+
+            return 1;
+        });
+
+    TestRunner::GetRunner()->AddTest(
+        "HTTP Response Creation",
+        "Must be able to set status code.",
+        []() {
+            HTTPResponse response;
+
+            response.Status(500);
+            
+            cout << response.GetHeader();
+
+            if( response.GetHeader() != "HTTP/1.1 500\r\n\r\n"){
+                return 0;
+            }
+
+            return 1;
+        });
+
+    TestRunner::GetRunner()->AddTest(
+        "HTTP Response Creation",
+        "Must be able to set headers.",
+        []() {
+            HTTPResponse response;
+
+            response.SetHeaderField("Content-Type","text/html");
+            
+            cout << response.GetHeader();
+
+            if( response.GetHeader() != "HTTP/1.1 200 Document Follows\r\nContent-Type: text/html\r\n\r\n"){
+                return 0;
+            }
+
+            return 1;
+        });
+
+    TestRunner::GetRunner()->AddTest(
+        "HTTP Response Creation",
+        "Must be able to create header from HTTPRequest header.",
+        []() {
+            string hdr = "GET /Protocols/rfc1945/rfc1945 HTTP/1.0";
+
+            HTTPRequest request(hdr);
+            HTTPResponse response(request);            
+            
+            cout << response.GetHeader();
+
+            if( response.GetHeader() != "HTTP/1.0 200 Document Follows\r\n\r\n"){
+                return 0;
+            }
+
+            return 1;
+        });
 
     TestRunner::GetRunner()->AddTest(
         "HTTP Request Parsing",
@@ -189,5 +268,5 @@ int main(int argc, char **argv)
 
     TestRunner::GetRunner()->PrintSummary();
 
-    return 0;
+    return TestRunner::GetRunner()->GetRetCode();
 }

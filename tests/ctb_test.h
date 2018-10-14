@@ -111,6 +111,10 @@ class TestRunner
         }
     }
 
+    int GetRetCode(){
+        return m_retCode;
+    }
+
     void PrintSummary()
     {
         std::cout<<"======SUMMARY======"<<std::endl;
@@ -119,6 +123,9 @@ class TestRunner
             std::cout<< it->first <<":"<<
                 it->second->tests.size()-it->second->failCount<<"/"<<
                 it->second->tests.size()<< std::endl;
+            if(it->second->failCount > 0){
+                m_retCode = -1;
+            }
         }
     }
 
@@ -133,9 +140,11 @@ class TestRunner
     }
     /** The vector of test casts (sets of tests) */
     std::unordered_map<std::string, TestCase *> m_cases;
+    int m_retCode;
 
     TestRunner()
     {
+        m_retCode = 0;
     }
 };
 

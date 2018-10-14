@@ -12,13 +12,13 @@
 class Session
 {
   public:
-    Session( TCPSocket &connection );
+    Session( TCPSocket *connection );
     ~Session();
 
     void Run();
 
   private:
-    TCPSocket m_connection;    
+    TCPSocket *m_connection;    
 };
 
 #endif

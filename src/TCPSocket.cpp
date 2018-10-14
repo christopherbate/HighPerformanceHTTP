@@ -225,9 +225,8 @@ uint32_t TCPSocket::BlockingRecv(char *buffer, uint32_t size)
         return 0;
     }
     m_timeout = false;
-    struct sockaddr_storage recvAddr;
-    socklen_t recvAddrLen = sizeof(struct sockaddr_storage);
-    ssize_t res = recvfrom(m_fd, buffer, size, 0, (struct sockaddr *)&recvAddr, &recvAddrLen);
+
+    ssize_t res = recv(m_fd, buffer, size, 0);
 
     if (res == -1)
     {

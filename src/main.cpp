@@ -6,7 +6,10 @@ main.cpp
 #include <iostream>
 #include <thread>
 #include "TCPSocket.h"
+#include "HTTPRequest.h"
 #include <csignal>
+#include <string>
+#include "Session.h"
 
 using namespace std;
 
@@ -43,7 +46,6 @@ int main(int argc, char **argv)
         exit(0);
     });
 
-
     cout << "Listening on " << argv[1] << endl;
     while (1)
     {
@@ -55,17 +57,18 @@ int main(int argc, char **argv)
                 continue;
             }
 
-            cout << "Connection from: " <<std::hex<< newSocket->GetPeer() << endl;
+            cout << "Connection from: " << std::hex << newSocket->GetPeer() << endl;
 
             // Spawn the thread.
-            std::thread session([newSocket]() {
-                newSocket->CloseSocket();
-
-                delete newSocket;
+            std::thread session([&newSocket]() {                
+                Session newSession(newSocket);
+                newSession.Run();
             });
             session.detach();
-        }catch( std::exception &e ){
-            cerr<<"Exception: "<<e.what()<<endl;
+        }
+        catch (std::exception &e)
+        {
+            cerr << "Exception: " << e.what() << endl;
         }
     }
 

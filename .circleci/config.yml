@@ -10,4 +10,4 @@ jobs:
           command: make
       - run:
           name: Test
-          command: date
+          command: ./server_tests
