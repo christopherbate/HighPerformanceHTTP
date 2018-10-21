@@ -14,7 +14,7 @@ HTTPResponse::HTTPResponse(HTTPRequest &request)
 {
     if (request.GetKeepAlive())
     {
-        headerValues["Connection"] = "Keep-Alive";
+        headerValues["Connection"] = "keep-alive";
     }
     m_status = 200;
     m_contentLength = 0;
@@ -25,10 +25,6 @@ HTTPResponse::~HTTPResponse()
 {
 }
 
-void HTTPResponse::Send(TCPSocket &socket)
-{
-}
-
 void HTTPResponse::SetHeaderField(string key, string value)
 {
     headerValues[key] = value;
@@ -36,21 +32,19 @@ void HTTPResponse::SetHeaderField(string key, string value)
 
 std::string HTTPResponse::GetHeader()
 {
-    // Construct the header.
-    std::stringstream ss;
+    std::string header(m_protocol);
+    header += " " + to_string(m_status);
+    if (m_status >= 200 && m_status <= 300)
+        header += " Document Follows";
 
-    ss << m_protocol << " " << m_status;
+    header += "\r\n";
 
-    if(m_status >= 200 && m_status <= 300)
-       ss << " Document Follows";
-    
-    ss << "\r\n";    
-    
-    for(auto it = headerValues.begin(); it != headerValues.end(); it++){
-        ss << it->first <<": "<< it->second <<"\r\n";
-    }    
+    for (auto it = headerValues.begin(); it != headerValues.end(); it++)
+    {
+        header += it->first + ": " + it->second + "\r\n";
+    }
 
-    ss<<"\r\n";
+    header += "\r\n";
 
-    return ss.str();
+    return header;
 }

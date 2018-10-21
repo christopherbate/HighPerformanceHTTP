@@ -2,67 +2,135 @@
 #include <chrono>
 #include "HTTPRequest.h"
 #include "HTTPResponse.h"
+#include <cassert>
 
 using namespace std;
 
-Session::Session(TCPSocket *connection) : m_connection(connection)
+Session::Session(TCPSocket *connection, const char *root) : m_connection(connection), m_fileManager(root)
 {
 }
 
 Session::~Session()
 {
     // Close connection
-    if(m_connection)
+    if (m_connection)
         delete m_connection;
 }
 
 void Session::Run()
 {
-    bool alive = true;
-
-    m_connection->SetRecvTimeout(1000);
-
-    auto startTimer = chrono::system_clock::now();
-
-    while (alive)
+    if (!m_connection)
     {
-        // Receive data
-        char data[1024];
-        uint32_t length = 0;
+        throw std::runtime_error("Connection socket is not set.");
+    }
+    const unsigned timeout = 10000000;
+    m_connection->SetRecvTimeout(timeout);
+    auto startTimer = chrono::system_clock::now();
+    // Receive data
+    char data[2048];
+    uint32_t length = 0;
 
-        while(length == 0){
-            length = m_connection->BlockingRecv(data, 1024);
-            if(m_connection->DidTimeout()){
+    cout << "Running session." << endl;
+
+    while (1)
+    {
+        //assert(m_connection);
+        //assert(!m_connection->IsBad());
+
+        do
+        {
+            length = m_connection->BlockingRecv(data, 2048);            
+
+            if (m_connection->DidTimeout())
+            {
                 auto timeCheck = chrono::system_clock::now();
-                if( chrono::duration_cast<chrono::seconds>(timeCheck-startTimer).count() > 10){
-                    cout <<"Keep alive expired."<<endl;
-                    break;
+                if (chrono::duration_cast<chrono::microseconds>(timeCheck - startTimer).count() > timeout)
+                {
+                    cout << "Keep alive expired" << endl;
+                    cout << "Ending session" << endl;
+                    m_connection->CloseSocket();
+                    return;
                 }
             }
-        }
+            else if (length == 0)
+            {
+                cout << "Peer closed connection." << endl;
+                m_connection->CloseSocket();
+                return;
+            }
+
+        } while (length == 0);
 
         // Display tthe header information (for fun)
-        cout << "Received data of length: " << std::dec<<length << endl;
+        cout << "Received request of length: " << std::dec << length << endl;
         string dataString = string(data, length);
         HTTPRequest request(dataString);
+        cout << request.GetUrl() << endl;
 
+        // Print header information.
+        /*
         cout << "Header:" << endl;
         cout << request.GetMethod() << endl;
         cout << request.GetUrl() << endl;
-        cout << request.GetProtocol() << endl;
+        cout << request.GetProtocol();
         cout << request.GetHost() << endl;
         cout << "Keepalive:" << request.GetKeepAlive() << endl;
+        */
 
-        if(request.GetKeepAlive()){
-            cout << "Sstarting keep alive timer"<<endl;
-            startTimer = chrono::system_clock::now();
-        } else {
-            break;
+        // Create response.
+        HTTPResponse response(request);
+
+        // If the url is present, retrieve the corresponding file.
+        std::string url = request.GetUrl();
+        std::string filename;
+        uint64_t size = 0;
+        if (url != "")
+        {
+            try
+            {
+                filename = m_fileManager.GetFilename(url, size);
+
+                response.SetHeaderField("Content-Length", to_string(size));
+                response.SetHeaderField("Content-Type", m_fileManager.GetContentType(filename));
+            }
+            catch (std::runtime_error &e)
+            {
+                cerr << "Exception in URL processing. " << e.what() << endl;                
+                response.Status(500);
+                response.SetHeaderField("Content-Length", to_string(0));
+                size = 0;
+            }
         }
 
-        // Send the correct response.
-        HTTPResponse response;
+        // Display response.
+        std::string respHeader = response.GetHeader();
+
+        m_connection->BlockingSend(respHeader.c_str(), respHeader.length());
+
+        // Send the file.
+        char buffer[1024];
+        if (size > 0)
+        {
+            ifstream infile(filename);
+            while (!infile.eof())
+            {
+                infile.read(buffer, 1024);
+                m_connection->BlockingSend(buffer, infile.gcount());
+            }
+            infile.close();
+        }
+
+        if (request.GetKeepAlive())
+        {
+            cout << "Starting keep alive timer" << endl;
+            startTimer = chrono::system_clock::now();
+        }
+        else {
+            break;
+        }
     }
 
-    m_connection->CloseSocket();                
+    cout << "Ending session" << endl;
+
+    m_connection->CloseSocket();
 }

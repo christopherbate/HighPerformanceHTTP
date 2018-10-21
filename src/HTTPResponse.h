@@ -17,7 +17,6 @@ HTTPResponse(HTTPRequest &request);
 
 ~HTTPResponse();
 
-void Send(TCPSocket &socket);
 void SetHeaderField( string key, string value);
 void Status(int status){
     m_status = status;
@@ -29,7 +28,16 @@ string &GetProtocol(){
 
 std::string GetHeader();
 
+void SetProtocol(string protocol){
+    m_protocol = protocol;    
+}
+
+void SetKeepAlive(bool ka){    
+    headerValues["Connection"] = !ka ? "close" : "keep-alive";
+}
+
 private:
+    std::string m_filename;
     uint64_t m_contentLength;
     uint32_t m_status;
     std::unordered_map<string,string> headerValues;

@@ -189,10 +189,14 @@ uint32_t TCPSocket::BlockingSend(const char *data, uint32_t length)
     //cout << "Sending: " << data << " of length " << length << endl;
     ssize_t sl = length;
     ssize_t res = 0;
+    ssize_t total = 0;
 
     // If we are passive, we need to specify address. Otherwise, we saved it using "connect"
     // although both are using datagram udp.
-    res = send(m_fd, data, sl, 0);
+    while(total != length){
+        res = send(m_fd, data, sl, 0);
+        total+=res;
+    }    
 
     if (res == -1)
     {
@@ -234,6 +238,8 @@ uint32_t TCPSocket::BlockingRecv(char *buffer, uint32_t size)
         {
             //////cerr << "Timeout" << endl;
             m_timeout = true;
+        } else {
+            m_bad = true;
         }
         return 0;
     }
@@ -250,7 +256,7 @@ bool TCPSocket::Listen()
         return false;
     }
 
-    int res = listen(m_fd, 1000);
+    int res = listen(m_fd, 10);
 
     if (res == -1)
     {

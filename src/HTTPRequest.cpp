@@ -1,5 +1,6 @@
 #include "HTTPRequest.h"
 #include <sstream>
+#include <algorithm>
 #include <vector>
 
 HTTPRequest::HTTPRequest(std::string &data)
@@ -21,6 +22,9 @@ void HTTPRequest::ParseHeader(std::string &data)
     uint32_t index = 0;
     while (std::getline(stringStream, line))
     {
+        // Remove carriage feeds.
+        line.erase(std::remove(line.begin(),line.end(),'\r'),line.end());
+
         // Loop over all the owrds.
         if (index == 0)
         {
@@ -61,6 +65,9 @@ void HTTPRequest::ParseHeader(std::string &data)
                 if (pos != std::string::npos )
                 {
                     pos = line.find("Keep-alive");
+                    if( pos == std::string::npos ){
+                        pos = line.find("keep-alive");
+                    }
                     m_keepAlive = pos != std::string::npos ? true : false;
                 }
             }

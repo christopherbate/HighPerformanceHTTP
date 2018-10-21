@@ -46,9 +46,9 @@ int main(int argc, char **argv)
         exit(0);
     });
 
-    cout << "Listening on " << argv[1] << endl;
     while (1)
     {
+        cout << "Listening on " << argv[1] << endl;
         try
         {
             TCPSocket *newSocket = server.Accept();
@@ -60,8 +60,8 @@ int main(int argc, char **argv)
             cout << "Connection from: " << std::hex << newSocket->GetPeer() << endl;
 
             // Spawn the thread.
-            std::thread session([&newSocket]() {                
-                Session newSession(newSocket);
+            std::thread session([newSocket]() {
+                Session newSession(newSocket, "./www/");
                 newSession.Run();
             });
             session.detach();
